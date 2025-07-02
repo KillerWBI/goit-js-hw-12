@@ -1,6 +1,6 @@
 import iziToast from "izitoast";
 import "izitoast/dist/css/iziToast.min.css";
-import { getImagesByQuery, MoreImgPerPage } from './js/pixabay-api.js';
+import { getImagesByQuery } from './js/pixabay-api.js';
 import { clearGallery, createGallery, hideEndOfGallery, hideLoader, showEndOfGallery, showLoader } from './js/render-functions.js';
 
 const form = document.querySelector('.form');
@@ -9,10 +9,13 @@ let page = 1;
 const loadMoreButton = document.querySelector('.load-more');
 const loader = document.querySelector('.loaderContainer');
 const loaderGallery = document.querySelector('.loaderContainerMoreGallery');
+let totalHits = 0;
+let queryhist = '';
 
 form.addEventListener('submit', (event) => {
   event.preventDefault();
   page = 1;
+  queryhist = '';
   clearGallery();
   hideEndOfGallery();
   showLoader(loader);
@@ -31,7 +34,11 @@ form.addEventListener('submit', (event) => {
   getImagesByQuery(query, page).then(data => {
     if (data && data.hits && data.hits.length > 0) {
       createGallery(data.hits);
-      showEndOfGallery();
+      queryhist = query;
+      totalHits = data.totalHits;
+      if( totalHits > 15) {
+        showEndOfGallery();
+      }
     } else {
       iziToast.error({
         title: 'Error',
@@ -61,10 +68,20 @@ loadMoreButton.addEventListener('click', () => {
   showLoader(loaderGallery);
   hideEndOfGallery();
 
-  MoreImgPerPage(searchInput.value.trim(), page).then(data => {
+  getImagesByQuery(queryhist, page).then(data => {
     if (data && data.hits && data.hits.length > 0) {
       createGallery(data.hits);
-      showEndOfGallery();
+      if (data.totalHits > page * 15 || data.totalHits <= page * 15) {
+        showEndOfGallery();
+      }
+      if (data.totalHits <= page * 15) {
+        iziToast.info({
+          title: 'Info',
+          message: 'You have reached the end of the gallery.',
+          timeout: 3000,
+          position: 'topRight',
+        });
+      }
     } else {
       iziToast.error({
         title: 'Error',
