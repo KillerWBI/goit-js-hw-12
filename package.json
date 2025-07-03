@@ -10,7 +10,6 @@
     "deploy": "npm run build && gh-pages -d dist",
     "homepage": "https://killerwbi.github.io/goit-js-hw-12/"
   },
-
   "devDependencies": {
     "gh-pages": "^6.3.0",
     "prettier": "^3.6.2",

@@ -10,33 +10,40 @@ const loadMoreButton = document.querySelector('.load-more');
 const loader = document.querySelector('.loaderContainer');
 const loaderGallery = document.querySelector('.loaderContainerMoreGallery');
 let totalHits = 0;
+let AlltotalHits = 0;
 let queryhist = '';
 
-form.addEventListener('submit', (event) => {
+form.addEventListener('submit', async (event) => {
   event.preventDefault();
+  totalHits = 0;
+  AlltotalHits = 0;
   page = 1;
   queryhist = '';
   clearGallery();
   hideEndOfGallery();
   showLoader(loader);
+
   const query = searchInput.value.trim();
-  if (!query)  {
-    hideLoader();
+  if (!query) {
+    hideLoader(loader);
     iziToast.warning({
-        title: 'Warning',
-        message: 'Please enter a search term!',
-        timeout: 3000,
-        position: 'topRight',
-      });
-      return;
+      title: 'Warning',
+      message: 'Please enter a search term!',
+      timeout: 3000,
+      position: 'topRight',
+    });
+    return;
   }
 
-  getImagesByQuery(query, page).then(data => {
+  try {
+    const data = await getImagesByQuery(query, page);
+    totalHits += data.hits.length;
+    AlltotalHits = data.totalHits;
+;
     if (data && data.hits && data.hits.length > 0) {
       createGallery(data.hits);
       queryhist = query;
-      totalHits = data.totalHits;
-      if( totalHits > 15) {
+      if (AlltotalHits > totalHits) {
         showEndOfGallery();
       }
     } else {
@@ -45,61 +52,61 @@ form.addEventListener('submit', (event) => {
         message: 'Sorry, no images found. Try again!',
         timeout: 3000,
         position: 'topRight',
-      });;
+      });
     }
-  })
-  .catch(error => {
+  } catch (error) {
     iziToast.error({
       title: 'Error',
       message: `An error occurred: ${error.message}`,
       timeout: 3000,
       position: 'topRight',
     });
-  })
-  .finally(() => {
+  } finally {
     hideLoader(loader);
     searchInput.value = '';
-  }   )
+  }
 });
 
 
-loadMoreButton.addEventListener('click', () => {
+loadMoreButton.addEventListener('click', async () => {
   page += 1;
   showLoader(loaderGallery);
   hideEndOfGallery();
 
-  getImagesByQuery(queryhist, page).then(data => {
+  try {
+    const data = await getImagesByQuery(queryhist, page);
     if (data && data.hits && data.hits.length > 0) {
       createGallery(data.hits);
-      if (data.totalHits > page * 15 || data.totalHits <= page * 15) {
-        showEndOfGallery();
-      }
-      if (data.totalHits <= page * 15) {
+      totalHits += data.hits.length;
+      const lastimage = document.querySelector('.gallery').lastElementChild;
+      lastimage.scrollIntoView({ behavior: 'smooth', block: 'start'});
+      if (totalHits >= AlltotalHits || data.hits.length < 15) {
         iziToast.info({
           title: 'Info',
           message: 'You have reached the end of the gallery.',
           timeout: 3000,
           position: 'topRight',
         });
+        return;
       }
+
+      showEndOfGallery();
     } else {
       iziToast.error({
         title: 'Error',
         message: 'Sorry, no images found. Try again!',
         timeout: 3000,
         position: 'topRight',
-      });;
+      });
     }
-  })
-  .catch(error => {
+  } catch (error) {
     iziToast.error({
       title: 'Error',
       message: `An error occurred: ${error.message}`,
       timeout: 3000,
       position: 'topRight',
     });
-  })
-  .finally(() => {
+  } finally {
     hideLoader(loaderGallery);
-  });
+  }
 });
